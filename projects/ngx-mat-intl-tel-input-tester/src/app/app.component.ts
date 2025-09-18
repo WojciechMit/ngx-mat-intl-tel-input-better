@@ -68,7 +68,15 @@ export class AppComponent implements AfterViewInit {
 
   ngAfterViewInit() {
     if (this.phoneInput && this.phoneInput.matMenu) {
-      this.phoneInput.matMenu.panelClass = 'custom-panel';
+      // this.phoneInput.matMenu.panelClass = 'custom-panel';
     }
+  }
+
+  testReset: any;
+
+  test() {
+    console.log('============666666 this.phoneForm.controls.phone.value', this.phoneForm.controls.phone.value);
+    
+    this.testReset = this.phoneForm.controls.phone.value;
   }
 }

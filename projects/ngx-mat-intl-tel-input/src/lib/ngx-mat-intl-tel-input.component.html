@@ -2,22 +2,26 @@
   <button
     type="button"
     mat-button
-    [matMenuTriggerFor]="menu"
     class="country-selector"
     [disabled]="disabled"
+    (click)="selectCounrtyOpen()"
   >
     <span
       class="country-selector-flag flag"
       [ngClass]="selectedCountry?.flagClass"
     ></span>
-    <span class="country-selector-code" *ngIf="selectedCountry?.dialCode"
-    >+{{ selectedCountry.dialCode }}</span
-    >
+
+    <span class="country-selector-code" *ngIf="selectedCountry?.dialCode">
+      +{{ selectedCountry.dialCode }}
+    </span>
   </button>
-  <mat-menu #menu="matMenu"
-            class="ngx-mat-tel-input-mat-menu-panel"
-            backdropClass="ngx-mat-tel-input-overlay-backdrop"
-            overlayPanelClass="ngx-mat-tel-input-overlay-pane">
+
+  <!-- <mat-menu
+    #menu="matMenu"
+    class="ngx-mat-tel-input-mat-menu-panel"
+    backdropClass="ngx-mat-tel-input-overlay-backdrop"
+    overlayPanelClass="ngx-mat-tel-input-overlay-pane"
+  >
     <input
       *ngIf="enableSearch"
       class="country-search"
@@ -26,41 +30,121 @@
       [placeholder]="searchPlaceholder"
       (click)="$event.stopPropagation()"
     />
-    <ng-container *ngIf="!searchCriteria">
-      <button
-        type="button"
-        mat-menu-item
-        class="country-list-button"
-        *ngFor="let country of preferredCountriesInDropDown"
-        (click)="onCountrySelect(country, focusable)"
+    <div class="country-options">
+      <ng-container *ngIf="!searchCriteria">
+        <button
+          type="button"
+          mat-menu-item
+          class="country-list-button"
+          *ngFor="let country of preferredCountriesInDropDown"
+          (click)="onCountrySelect(country, focusable)"
+        >
+          <div class="icon-wrapper">
+            <div class="flag" [ngClass]="country.flagClass"></div>
+          </div>
+  
+          <div class="label-wrapper">
+            {{ country.name }}
+            <span *ngIf="country?.dialCode">+{{ country.dialCode }}</span>
+          </div>
+        </button>
+        <mat-divider *ngIf="preferredCountriesInDropDown?.length"></mat-divider>
+      </ng-container>
+  
+      <ng-container *ngFor="let country of allCountries">
+        <button
+          type="button"
+          mat-menu-item
+          class="country-list-button"
+          *ngIf="country | search: searchCriteria"
+          (click)="onCountrySelect(country, focusable)"
+        >
+          <div class="icon-wrapper">
+            <div class="flag" [ngClass]="country.flagClass"></div>
+          </div>
+          <div class="label-wrapper">
+            {{ country.name }} +{{ country.dialCode }}
+          </div>
+        </button>
+      </ng-container>
+    </div>
+  </mat-menu> -->
+
+  <!-- <div
+    (click)="dropDownHandler()"
+    class="country-container"
+  >
+    <div
+      *ngIf="countries && selectedCountryCode"
+      class="flag"
+      [ngClass]="countries?.[selectedCountryCode].iso"
+    ></div>
+    <p class="country-code"> +{{ countries?.[selectedCountryCode].code }}</p> -->
+
+    <mat-select
+      #select
+      class="dummy-input"
+    >
+    <mat-option class="search-field">
+      <ngx-mat-select-search
+        [(ngModel)]="searchCriteria"
+        [placeholderLabel]="'Szukaj'"
+        [noEntriesFoundLabel]="'Nie znaleziono danych'"
+      ></ngx-mat-select-search>
+    </mat-option>
+
+    <div class="options-content country-content">
+      <div
+        *ngIf="!searchCriteria && preferredCountriesInDropDown?.length"
+        class="preferred-countries-wrapper"
       >
-        <div class="icon-wrapper">
-          <div class="flag" [ngClass]="country.flagClass"></div>
-        </div>
-        <div class="label-wrapper">
-          {{ country.name }}
-          <span *ngIf="country?.dialCode">+{{ country.dialCode }}</span>
-        </div>
-      </button>
-      <mat-divider *ngIf="preferredCountriesInDropDown?.length"></mat-divider>
-    </ng-container>
-    <ng-container *ngFor="let country of allCountries">
-      <button
-        type="button"
-        mat-menu-item
-        class="country-list-button"
-        *ngIf="country | search: searchCriteria"
-        (click)="onCountrySelect(country, focusable)"
-      >
-        <div class="icon-wrapper">
-          <div class="flag" [ngClass]="country.flagClass"></div>
-        </div>
-        <div class="label-wrapper">
-          {{ country.name }} +{{ country.dialCode }}
-        </div>
-      </button>
-    </ng-container>
-  </mat-menu>
+        <mat-option
+          *ngFor="let item of preferredCountriesInDropDown | keyvalue"
+          [value]="item.key"
+          class="country-option"
+
+          (click)="teste(item)"
+        >
+
+          <div class="icon-wrapper">
+            <div
+              class="flag"
+              [ngClass]="item.value.iso2 | uppercase"
+            ></div>
+          </div>
+
+          <div class="label-wrapper">
+            {{ item.value.name }}
+
+            <span class="spanner"></span>
+    
+            +{{ item.value.dialCode }}
+          </div>
+        </mat-option>
+      </div>
+
+      <ng-container *ngFor="let country of allCountries">
+        <mat-option
+          *ngIf="country | search: searchCriteria"
+          class="country-list-button"
+          (click)="onCountrySelect(country, focusable)"
+          [value]="country.iso2"
+        >
+          <div class="icon-wrapper">
+            <div class="flag" [ngClass]="country.flagClass"></div>
+          </div>
+
+          <div class="label-wrapper">
+            {{ country.name }} 
+
+            <span class="spanner"></span>
+
+            +{{ country.dialCode }}
+          </div>
+        </mat-option>
+      </ng-container>
+    </div>
+  </mat-select>
 
   <input
     matInput

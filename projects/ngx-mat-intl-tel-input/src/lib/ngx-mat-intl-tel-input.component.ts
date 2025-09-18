@@ -19,6 +19,7 @@ import {MatFormFieldControl} from '@angular/material/form-field';
 import {
   FormGroupDirective,
   FormsModule,
+  FormControl,
   NgControl,
   NgForm,
   NG_VALIDATORS,
@@ -52,6 +53,8 @@ import {
 import {MatDividerModule} from '@angular/material/divider';
 import {MatInput, MatInputModule} from '@angular/material/input';
 import {MatMenu, MatMenuModule} from '@angular/material/menu';
+import {NgxMatSelectSearchModule } from 'ngx-mat-select-search';
+import {MatSelect, MatSelectModule} from '@angular/material/select';
 import {Subject} from 'rxjs';
 import {SearchPipe} from './search.pipe';
 
@@ -86,8 +89,10 @@ const _NgxMatIntlTelInputMixinBase: CanUpdateErrorStateCtor &
     MatInputModule,
     MatMenuModule,
     MatButtonModule,
+    MatSelectModule,
     MatDividerModule,
     ReactiveFormsModule,
+    NgxMatSelectSearchModule,
     SearchPipe
   ],
   providers: [
@@ -103,7 +108,8 @@ const _NgxMatIntlTelInputMixinBase: CanUpdateErrorStateCtor &
 })
 export class NgxMatIntlTelInputComponent
   extends _NgxMatIntlTelInputMixinBase
-  implements OnInit,
+  implements 
+    OnInit,
     OnDestroy,
     DoCheck,
     CanUpdateErrorState,
@@ -121,6 +127,10 @@ export class NgxMatIntlTelInputComponent
   @Input() searchPlaceholder: string | undefined;
   @Input() describedBy = '';
 
+  @Input() set resetTelNum(reset: any) {
+    if (reset) this.phoneNumber = '';
+  };
+
   @Input()
   get format(): PhoneNumberFormat {
     return this._format;
@@ -133,6 +143,9 @@ export class NgxMatIntlTelInputComponent
   }
 
   @ViewChild(MatMenu) matMenu: MatMenu | undefined;
+  @ViewChild(MatSelect) matSelect: MatSelect | undefined;
+
+
   private _placeholder: string | undefined;
   private _required = false;
   private _disabled = false;
@@ -148,6 +161,8 @@ export class NgxMatIntlTelInputComponent
   value: E164Number | string | undefined;
   searchCriteria: string | undefined;
   @Output() countryChanged = new EventEmitter<Country>();
+
+  filter: FormControl = new FormControl();
 
   private previousFormattedNumber: string | undefined;
   private _format: PhoneNumberFormat = 'default';
@@ -188,43 +203,44 @@ export class NgxMatIntlTelInputComponent
   }
 
   ngOnInit(): void {
-    if (!this.searchPlaceholder) {
-      this.searchPlaceholder = 'Search ...';
-    }
+    if (!this.searchPlaceholder) this.searchPlaceholder = 'Search ...';
+
     if (this.preferredCountries.length) {
       this.preferredCountries.forEach((iso2) => {
         const preferredCountry = this.allCountries
           .filter((c) => c.iso2 === iso2)
           .shift();
-        if (preferredCountry) {
-          this.preferredCountriesInDropDown.push(preferredCountry);
-        }
+        if (preferredCountry) this.preferredCountriesInDropDown.push(preferredCountry);
       });
     }
+
     if (this.onlyCountries.length) {
-      this.allCountries = this.allCountries.filter((c) =>
-        this.onlyCountries.includes(c.iso2)
-      );
+      this.allCountries = this.allCountries.filter((c) => this.onlyCountries.includes(c.iso2));
     }
+
     if (this.numberInstance && this.numberInstance.country) {
       // If an existing number is present, we use it to determine selectedCountry
       this.selectedCountry = this.getCountry(this.numberInstance.country);
     } else {
-      if (this.preferredCountriesInDropDown.length) {
-        this.selectedCountry = this.preferredCountriesInDropDown[0];
-      } else {
-        this.selectedCountry = this.allCountries[0];
-      }
+      this.selectedCountry = this.preferredCountriesInDropDown.length
+        ? this.preferredCountriesInDropDown[0]
+        : this.allCountries[0]
     }
     this.countryChanged.emit(this.selectedCountry);
+
     this._changeDetectorRef.markForCheck();
     this.stateChanges.next(undefined);
+
+    this.initPanelStatusSubscribe();
   }
 
   ngDoCheck(): void {
-    if (this.ngControl) {
-      this.updateErrorState();
-    }
+    if (this.ngControl) this.updateErrorState();
+  }
+
+  ngOnDestroy(): void {
+    this.stateChanges.complete();
+    this.fm.stopMonitoring(this.elRef);
   }
 
   public onPhoneNumberChange(): void {
@@ -236,9 +252,7 @@ export class NgxMatIntlTelInputComponent
       this.formatAsYouTypeIfEnabled();
       this.value = this.numberInstance?.number;
       if (this.numberInstance && this.numberInstance.isValid()) {
-        if (this.phoneNumber !== this.formattedPhoneNumber) {
-          this.phoneNumber = this.formattedPhoneNumber;
-        }
+        if (this.phoneNumber !== this.formattedPhoneNumber) this.phoneNumber = this.formattedPhoneNumber;
         if (
           this.selectedCountry?.iso2 !== this.numberInstance.country &&
           !!this.numberInstance.country
@@ -414,11 +428,6 @@ export class NgxMatIntlTelInputComponent
     this.stateChanges.next(undefined);
   }
 
-  ngOnDestroy(): void {
-    this.stateChanges.complete();
-    this.fm.stopMonitoring(this.elRef);
-  }
-
   private get formattedPhoneNumber(): string {
     if (!this.numberInstance) {
       return this.phoneNumber?.toString() || '';
@@ -450,4 +459,33 @@ export class NgxMatIntlTelInputComponent
     }
     this.previousFormattedNumber = this.phoneNumber?.toString();
   }
+
+
+
+
+  /////MatSelect
+  private initPanelStatusSubscribe() {
+    this.matSelect?.openedChange.subscribe((isOpen) => {
+      if (isOpen) setTimeout(() => this.scrollToSelectedOption(), 10);
+    });
+  }
+
+  selectCounrtyOpen() {
+    this.matSelect?.open();
+  }
+
+  panel: any;
+
+  private scrollToSelectedOption = () => {
+    const panel = document.querySelector('.options-content');
+
+    this.panel = panel;
+    if (!panel) return;
+    
+    setTimeout(() => {
+      const selected = panel.querySelector('.mat-mdc-option-active');
+
+      if (selected) selected.scrollIntoView({ block: 'center' });
+    }, 0);
+  };
 }
